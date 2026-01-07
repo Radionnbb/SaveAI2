@@ -64,6 +64,43 @@ export interface SearchHistoryItem {
   created_at: string
 }
 
+export interface Notification {
+  id: string
+  user_id: string
+  type: 'price_drop' | 'availability' | 'deal'
+  title: string
+  message: string
+  product_id?: string
+  product_name?: string
+  old_price?: number
+  new_price?: number
+  read: boolean
+  created_at: string
+}
+
+export interface NotificationPreferences {
+  id: string
+  user_id: string
+  price_drop_enabled: boolean
+  availability_enabled: boolean
+  deals_enabled: boolean
+  email_enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SharedComparison {
+  id: string
+  user_id: string
+  share_token: string
+  title: string
+  products: Product[]
+  is_public: boolean
+  expires_at?: string
+  created_at: string
+  shareUrl?: string
+}
+
 class ApiClient {
   private baseUrl: string
 
@@ -174,6 +211,70 @@ class ApiClient {
 
   async deleteSavedProduct(id: string): Promise<{ deleted: boolean }> {
     return this.request<{ deleted: boolean }>(`/api/saved?id=${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Notifications API
+  async getNotifications(): Promise<Notification[]> {
+    return this.request<Notification[]>('/api/notifications', {
+      method: 'GET',
+    })
+  }
+
+  async markNotificationAsRead(id: string, read: boolean = true): Promise<Notification> {
+    return this.request<Notification>('/api/notifications', {
+      method: 'PATCH',
+      body: JSON.stringify({ id, read }),
+    })
+  }
+
+  async deleteNotification(id?: string): Promise<{ deleted: number | string }> {
+    const url = id ? `/api/notifications?id=${id}` : '/api/notifications'
+    return this.request<{ deleted: number | string }>(url, {
+      method: 'DELETE',
+    })
+  }
+
+  async getNotificationPreferences(): Promise<NotificationPreferences> {
+    return this.request<NotificationPreferences>('/api/notifications/preferences', {
+      method: 'GET',
+    })
+  }
+
+  async updateNotificationPreferences(preferences: {
+    price_drop_enabled?: boolean
+    availability_enabled?: boolean
+    deals_enabled?: boolean
+    email_enabled?: boolean
+  }): Promise<NotificationPreferences> {
+    return this.request<NotificationPreferences>('/api/notifications/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(preferences),
+    })
+  }
+
+  // Share API
+  async createShareLink(data: {
+    title?: string
+    products: Product[]
+    isPublic?: boolean
+    expiresInDays?: number
+  }): Promise<SharedComparison> {
+    return this.request<SharedComparison>('/api/share', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getSharedComparison(token: string): Promise<SharedComparison> {
+    return this.request<SharedComparison>(`/api/share?token=${token}`, {
+      method: 'GET',
+    })
+  }
+
+  async deleteSharedComparison(id: string): Promise<{ deleted: boolean }> {
+    return this.request<{ deleted: boolean }>(`/api/share?id=${id}`, {
       method: 'DELETE',
     })
   }
